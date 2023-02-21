@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.theswirlingvoid.void_api.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "voidmultipartapi.refmap.json",
+  "mixins": [
+    "LevelNotifyBlockMixin",
+    "StructureTemplateAccessor"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
