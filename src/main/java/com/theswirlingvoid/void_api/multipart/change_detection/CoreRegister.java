@@ -19,45 +19,47 @@
 package com.theswirlingvoid.void_api.multipart.change_detection;
 
 import com.ibm.icu.impl.Pair;
+import com.mojang.logging.LogUtils;
+import com.theswirlingvoid.void_api.multipart.prebuilt.CoreTemplates;
 import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCore;
 import com.theswirlingvoid.void_api.multipart.prebuilt.PrebuiltMultiblockTemplate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.registries.RegistryObject;
 
-import java.util.List;
+public class CoreRegister {
 
-public class CoreRegister implements ChangeListener {
-
-	public static List<Pair<RegistryObject<Block>, PrebuiltMultiblockTemplate>> coreTemplates;
 	private final MinecraftServer server;
 
 	public CoreRegister(MinecraftServer server) {
 		this.server = server;
 	}
 
-	@Override
-	public void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate) {
-		for (Pair<RegistryObject<Block>, PrebuiltMultiblockTemplate> pair :coreTemplates) {
-			if (state.getBlock() == pair.first.get()) {
+	public void addBlockIfCore(BlockPos pos, BlockState state, BlockState newstate) {
+		for (Pair<RegistryObject<Block>, PrebuiltMultiblockTemplate> pair : CoreTemplates.getCoreTemplates()) {
 
-				ChangeListenerList.addListener(new MultiblockCore(
-						pair.second,
-						state.getBlock(),
-						pos,
-						server
-				));
+			ChangeFunctions funcs = new ChangeFunctions(pair.first.get(), state, newstate);
 
+			MultiblockCore core = new MultiblockCore(
+					pair.second,
+					funcs.getBlock(),
+					pos,
+					server
+			);
+
+			if (funcs.blockBroken() || funcs.blockPlaced()) {
+				ChangeListenerList.getListeners().forEach((l) -> { LogUtils.getLogger().info(l.toString()); });
+			}
+
+			if (funcs.blockPlaced()) {
+				ChangeListenerList.scheduleAddListener(core);
+				LogUtils.getLogger().info("Added listener from placed block at " +pos+" with template "+pair.second);
+			} else if (funcs.blockBroken()) {
+				ChangeListenerList.scheduleRemoveListenerOfType(MultiblockCore.class, core);
+				LogUtils.getLogger().info("Removed listener from broken block at " +pos+" with template "+pair.second);
 			}
 		}
-	}
-
-	public static Pair<RegistryObject<Block>, PrebuiltMultiblockTemplate> addCoreBlock(RegistryObject<Block> blockRegistry, PrebuiltMultiblockTemplate template) {
-		Pair<RegistryObject<Block>, PrebuiltMultiblockTemplate> p = Pair.of(blockRegistry, template);
-		coreTemplates.add(p);
-		return p;
 	}
 }

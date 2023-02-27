@@ -19,13 +19,10 @@
 package com.theswirlingvoid.void_api;
 
 import com.mojang.logging.LogUtils;
-import com.theswirlingvoid.void_api.block.ExperimentalMultipart;
 import com.theswirlingvoid.void_api.block.ModBlocks;
 import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListenerList;
-import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCore;
-import com.theswirlingvoid.void_api.multipart.prebuilt.PrebuiltMultiblockTemplate;
-import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import com.theswirlingvoid.void_api.multipart.change_detection.CoreRegister;
+import com.theswirlingvoid.void_api.multipart.prebuilt.CoreTemplates;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -55,6 +52,8 @@ public class ModMain {
 		ModBlocks.registerBlocks();
 
 		MinecraftForge.EVENT_BUS.register(this);
+
+		CoreTemplates.registerCores();
 	}
 
 	private void commonSetup(final FMLCommonSetupEvent event) {
@@ -63,7 +62,7 @@ public class ModMain {
 
 	@SubscribeEvent
 	public void onServerStarting(ServerStartingEvent event) {
-
+//		ChangeListenerList.scheduleAddListener(new CoreRegister(event.getServer()));
 	}
 
 	// You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent

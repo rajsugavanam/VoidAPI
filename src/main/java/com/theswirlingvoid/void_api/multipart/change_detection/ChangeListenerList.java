@@ -18,8 +18,8 @@
 
 package com.theswirlingvoid.void_api.multipart.change_detection;
 
+import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 
@@ -29,19 +29,39 @@ import java.util.List;
 public class ChangeListenerList {
 
 	private static List<ChangeListener> listeners = new ArrayList<>();
+	private static List<ChangeListener> listenersToRemove = new ArrayList<>();
+	private static List<ChangeListener> listenersToAdd = new ArrayList<>();
+
 	public static void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate) {
-		for (ChangeListener listener : listeners) {
-			listener.onBlockChange(pos, chunk, state, newstate);
+
+		listeners.removeAll(listenersToRemove);
+		listeners.addAll(listenersToAdd);
+		listenersToRemove.clear();
+		listenersToAdd.clear();
+
+		for (int i = 0; i < listeners.size(); i++) {
+			listeners.get(i).onBlockChange(pos, chunk, state, newstate);
 		}
 	}
 
-	public static void addListener(ChangeListener listener) {
-		listeners.add(listener);
+	public static void scheduleAddListener(ChangeListener listener) {
+		listenersToAdd.add(listener);
 	}
-	public static void removeListener(ChangeListener listener) {
-		listeners.remove(listener);
+	public static <T extends ChangeListener> void scheduleRemoveListenerOfType(Class<T> c, ChangeListener listener) {
+		for (int i = 0; i < listeners.size(); i++) {
+			if (listeners.get(i).getClass().equals(c)) {
+//				listeners.remove(i);
+				listenersToRemove.add(listeners.get(i));
+				return;
+			}
+		}
 	}
+
 	public static void clearListeners() {
 		listeners.clear();
+	}
+
+	public static List<ChangeListener> getListeners() {
+		return listeners;
 	}
 }

@@ -20,15 +20,41 @@ package com.theswirlingvoid.void_api.multipart.prebuilt;
 
 import com.ibm.icu.impl.Pair;
 import com.theswirlingvoid.void_api.ModMain;
+import com.theswirlingvoid.void_api.block.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
+import net.minecraftforge.registries.RegistryObject;
 
-public class MultiblockTemplates {
+import java.util.ArrayList;
+import java.util.List;
+
+public class CoreTemplates {
+
+	public static List<Pair<RegistryObject<Block>, PrebuiltMultiblockTemplate>> coreTemplates = new ArrayList<>();
 
 	public static final PrebuiltMultiblockTemplate TEST_MULTIBLOCK =
 			new PrebuiltMultiblockTemplate(
 					new ResourceLocation(ModMain.MODID, "structures/multiblocks/test_multiblock.nbt"),
 					new BlockPos(1,2,1)
 			);
+
+	public static PrebuiltMultiblockTemplate addCoreBlock(RegistryObject<Block> blockRegistry, PrebuiltMultiblockTemplate template) {
+		Pair<RegistryObject<Block>, PrebuiltMultiblockTemplate> p = Pair.of(blockRegistry, template);
+		coreTemplates.add(p);
+		return template;
+	}
+
+	public static void registerCores() {
+
+		CoreTemplates.addCoreBlock(
+				ModBlocks.EXPERIMENTAL_MULTIPART,
+				TEST_MULTIBLOCK
+		);
+
+	}
+
+	public static List<Pair<RegistryObject<Block>, PrebuiltMultiblockTemplate>> getCoreTemplates() {
+		return coreTemplates;
+	}
 }

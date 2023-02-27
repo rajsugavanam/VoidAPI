@@ -21,6 +21,7 @@ package com.theswirlingvoid.void_api.multipart.prebuilt;
 import com.mojang.logging.LogUtils;
 import com.theswirlingvoid.void_api.block.ExperimentalMultipart;
 import com.theswirlingvoid.void_api.mixin.StructureTemplateAccessor;
+import com.theswirlingvoid.void_api.multipart.change_detection.ChangeFunctions;
 import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListener;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -38,14 +39,14 @@ import java.util.List;
 
 public class MultiblockCore implements ChangeListener {
 	PrebuiltMultiblockTemplate multiblockTemplate;
-	BlockPos observingOrigin;
+	BlockPos blockPos;
 	Block block;
 	List<BlockPos> observingPositions = new ArrayList<>();
 	MinecraftServer server;
 
-	public MultiblockCore(PrebuiltMultiblockTemplate multiblockTemplate, Block block, BlockPos observingOrigin, MinecraftServer server) {
+	public MultiblockCore(PrebuiltMultiblockTemplate multiblockTemplate, Block block, BlockPos pos, MinecraftServer server) {
 		this.multiblockTemplate = multiblockTemplate;
-		this.observingOrigin = observingOrigin;
+		this.blockPos = pos;
 		this.block = block;
 		this.server = server;
 	}
@@ -56,17 +57,19 @@ public class MultiblockCore implements ChangeListener {
 
 		palette.blocks().forEach((sbi) -> {
 			// why do i have to do this subtraction magic? god knows!
-			observingPositions.add(observingOrigin.subtract(sbi.pos.multiply(-1)));
+			observingPositions.add(blockPos.subtract(sbi.pos.multiply(-1)));
 		});
 	}
 
 	@Override
 	public void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate) {
 		// experimental code
-		if (chunk.getStatus() == ChunkStatus.FULL && state.getBlock() == block) {
-			if (newstate.getBlock() == block) { // PLACED
+		if ((chunk.getStatus() == ChunkStatus.FULL) && (pos == blockPos)) {
+			ChangeFunctions funcs = new ChangeFunctions(state.getBlock(), state, newstate);
+
+			if (funcs.blockPlaced()) {
 				LogUtils.getLogger().info("onBlockChange(); PLACED");
-			} else { 							// BROKEN
+			} else if (funcs.blockBroken()) {
 				LogUtils.getLogger().info("onBlockChange(); BROKEN");
 			}
 		}
