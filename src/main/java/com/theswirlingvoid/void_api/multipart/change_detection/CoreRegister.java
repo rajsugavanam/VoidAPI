@@ -18,16 +18,13 @@
 
 package com.theswirlingvoid.void_api.multipart.change_detection;
 
-import com.ibm.icu.impl.Pair;
 import com.mojang.logging.LogUtils;
 import com.theswirlingvoid.void_api.multipart.prebuilt.CoreTemplates;
 import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCore;
-import com.theswirlingvoid.void_api.multipart.prebuilt.PrebuiltMultiblockTemplate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.registries.RegistryObject;
 
 public class CoreRegister {
 
@@ -37,29 +34,24 @@ public class CoreRegister {
 		this.server = server;
 	}
 
-	public void addBlockIfCore(BlockPos pos, BlockState state, BlockState newstate) {
-		for (Pair<RegistryObject<Block>, PrebuiltMultiblockTemplate> pair : CoreTemplates.getCoreTemplates()) {
+	public void modifyBlockIfCore(Level level, BlockPos pos, BlockState state, BlockState newstate) {
+		CoreTemplates.getCoreTemplates().keySet().forEach((block) -> {
 
-			ChangeFunctions funcs = new ChangeFunctions(pair.first.get(), state, newstate);
+			ChangeFunctions funcs = new ChangeFunctions(block, state, newstate);
 
-			MultiblockCore core = new MultiblockCore(
-					pair.second,
-					funcs.getBlock(),
-					pos,
-					server
+			MultiblockCore potentialCore = new MultiblockCore(
+					block,
+					level.dimension(),
+					pos
 			);
 
-			if (funcs.blockBroken() || funcs.blockPlaced()) {
-				ChangeListenerList.getListeners().forEach((l) -> { LogUtils.getLogger().info(l.toString()); });
+			if (funcs.involvedBlockPlaced()) {
+				ChangeListenerList.INSTANCE.scheduleAddListener(potentialCore);
+				potentialCore.onPlaced();
+			} else if (funcs.involvedBlockBroken()) {
+				ChangeListenerList.INSTANCE.scheduleRemoveListenerOfType(MultiblockCore.class, potentialCore);
+				potentialCore.onBroken();
 			}
-
-			if (funcs.blockPlaced()) {
-				ChangeListenerList.scheduleAddListener(core);
-				LogUtils.getLogger().info("Added listener from placed block at " +pos+" with template "+pair.second);
-			} else if (funcs.blockBroken()) {
-				ChangeListenerList.scheduleRemoveListenerOfType(MultiblockCore.class, core);
-				LogUtils.getLogger().info("Removed listener from broken block at " +pos+" with template "+pair.second);
-			}
-		}
+		});
 	}
 }

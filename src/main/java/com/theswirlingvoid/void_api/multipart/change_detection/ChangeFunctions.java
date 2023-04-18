@@ -18,38 +18,42 @@
 
 package com.theswirlingvoid.void_api.multipart.change_detection;
 
+import com.mojang.logging.LogUtils;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.logging.Logger;
+
 public class ChangeFunctions {
 	private final BlockState oldState;
 	private final BlockState newState;
-	private final Block block;
+	private final Block involvedBlock;
 
 	private final boolean blockWasThere;
 	private final boolean blockIsThere;
-	private final boolean involvedBlock;
+	private final boolean eventInvolvedBlock;
 
-	public ChangeFunctions(Block block, BlockState oldState, BlockState newState) {
+	public ChangeFunctions(Block involvedBlock, BlockState oldState, BlockState newState) {
 		this.oldState = oldState;
 		this.newState = newState;
-		this.block = block;
+		this.involvedBlock = involvedBlock;
 
 //		blockIsThere = (newState.getBlock() == block);
 //		blockWasThere = (oldState.getBlock() == block);
 
 		blockIsThere = (newState.getBlock() != Blocks.AIR);
 		blockWasThere = (oldState.getBlock() != Blocks.AIR);
-		involvedBlock = (newState.getBlock() == block || oldState.getBlock() == block);
+
+		eventInvolvedBlock = (newState.getBlock() == involvedBlock || oldState.getBlock() == involvedBlock);
 	}
 
-	public boolean blockBroken() {
-		return (blockWasThere && !blockIsThere && involvedBlock);
+	public boolean involvedBlockBroken() {
+		return (blockWasThere && !blockIsThere && eventInvolvedBlock);
 	}
 
-	public boolean blockPlaced() {
-		return (!blockWasThere && blockIsThere && involvedBlock);
+	public boolean involvedBlockPlaced() {
+		return (!blockWasThere && blockIsThere && eventInvolvedBlock);
 	}
 
 	public BlockState getOldState() {
@@ -60,7 +64,7 @@ public class ChangeFunctions {
 		return newState;
 	}
 
-	public Block getBlock() {
-		return block;
+	public Block getInvolvedBlock() {
+		return involvedBlock;
 	}
 }

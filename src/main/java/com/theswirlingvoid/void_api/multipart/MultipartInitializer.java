@@ -16,18 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.theswirlingvoid.void_api.multipart.change_detection;
+package com.theswirlingvoid.void_api.multipart;
 
-import com.google.gson.JsonDeserializer;
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
-import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCore;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.LevelChunk;
+import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListenerList;
+import com.theswirlingvoid.void_api.multipart.prebuilt.CoreTemplates;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.Level;
 
-public interface ChangeListener {
-	void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate);
-
-	boolean equals(ChangeListener l2);
+public class MultipartInitializer {
+	public static void initializeServer(MinecraftServer server) {
+		CoreTemplates.registerCores();
+		ChangeListenerList.INSTANCE.loadListenerList(server);
+	}
 }

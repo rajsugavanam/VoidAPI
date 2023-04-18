@@ -18,50 +18,134 @@
 
 package com.theswirlingvoid.void_api.multipart.change_detection;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import com.mojang.logging.LogUtils;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.LevelChunk;
+import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCore;
+import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCoreAdapter;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.storage.DimensionDataStorage;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
-public class ChangeListenerList {
+public class ChangeListenerList extends SavedData {
 
-	private static List<ChangeListener> listeners = new ArrayList<>();
-	private static List<ChangeListener> listenersToRemove = new ArrayList<>();
-	private static List<ChangeListener> listenersToAdd = new ArrayList<>();
+	public static ChangeListenerList INSTANCE = new ChangeListenerList();
 
-	public static void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate) {
+	public List<ChangeListener> listeners = new ArrayList<>();
+	public List<ChangeListener> listenersToRemove = new ArrayList<>();
+	public List<ChangeListener> listenersToAdd = new ArrayList<>();
 
+	private static final String DATA_FILE_NAME = "changelistenerlist";
+	private static final String LISTENER_SAVE_NAME = "listeners";
+	private static final String TOADD_SAVE_NAME = "listenersToAdd";
+	private static final String TOREMOVE_SAVE_NAME = "listenersToRemove";
+
+	private ChangeListenerList() {} // no construction for u!
+
+	/**
+	 * Load the listener data into the <code>INSTANCE</code> field.
+	 * @param server The server where the the list data is held
+	 */
+	public void loadListenerList(MinecraftServer server) {
+		if (!server.overworld().isClientSide) {
+			DimensionDataStorage storage = server.overworld().getDataStorage();
+			storage.computeIfAbsent(
+					this::load, // if data DOES exist
+					this::create, // if data doesn't exist
+					DATA_FILE_NAME
+			);
+		} else {
+			throw new RuntimeException("An error has occured. Do not run ChangeListenerList::getListenerList() from the client.");
+		}
+	}
+
+	public ChangeListenerList create() {
+		return this;
+	}
+
+	public ChangeListenerList load(CompoundTag savedTag) {
+
+		GsonBuilder gson = new GsonBuilder();
+		gson.registerTypeAdapterFactory(new ChangeListenerAdapterFactory(MultiblockCore.class));
+		gson.registerTypeAdapter(MultiblockCore.class, new MultiblockCoreAdapter());
+		Gson parser = gson.create();
+
+		listeners = parser.fromJson(savedTag.getString(LISTENER_SAVE_NAME), new TypeToken<List<ChangeListener>>() {});
+		listenersToAdd = parser.fromJson(savedTag.getString(TOADD_SAVE_NAME), new TypeToken<List<ChangeListener>>() {});
+		listenersToRemove = parser.fromJson(savedTag.getString(TOREMOVE_SAVE_NAME), new TypeToken<List<ChangeListener>>() {});
+
+		LogUtils.getLogger().info("Successfully loaded ChangeListenerList data.");
+		return this;
+	}
+
+	/**
+	 * Schedules a listener to be added. It will be added to the list when <code>update()</code> is called.
+	 * @param listener The listener object to add
+	 */
+	public void scheduleAddListener(ChangeListener listener) {
+		listenersToAdd.add(listener);
+		LogUtils.getLogger().info("Added multib. listener "+listener);
+	}
+	public <T extends ChangeListener> void scheduleRemoveListenerOfType(Class<T> c, T listener) {
+		for (int i = 0; i < listeners.size(); i++) {
+			ChangeListener currentListener = listeners.get(i);
+			if (currentListener.getClass().equals(c)) {
+				if (currentListener.equals(listener)) {
+					listenersToRemove.add(currentListener);
+					LogUtils.getLogger().info("Removed multib. listener "+currentListener);
+					return;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Adds and removes the scheduled listeners.
+	 */
+	public void update() {
 		listeners.removeAll(listenersToRemove);
 		listeners.addAll(listenersToAdd);
 		listenersToRemove.clear();
 		listenersToAdd.clear();
 
-		for (int i = 0; i < listeners.size(); i++) {
-			listeners.get(i).onBlockChange(pos, chunk, state, newstate);
-		}
+		this.setDirty();
 	}
 
-	public static void scheduleAddListener(ChangeListener listener) {
-		listenersToAdd.add(listener);
-	}
-	public static <T extends ChangeListener> void scheduleRemoveListenerOfType(Class<T> c, ChangeListener listener) {
-		for (int i = 0; i < listeners.size(); i++) {
-			if (listeners.get(i).getClass().equals(c)) {
-//				listeners.remove(i);
-				listenersToRemove.add(listeners.get(i));
-				return;
-			}
-		}
-	}
-
-	public static void clearListeners() {
+	/**
+	 * Remove every listener that's stored.
+	 */
+	public void clearListeners() {
 		listeners.clear();
 	}
 
-	public static List<ChangeListener> getListeners() {
-		return listeners;
+	@Override
+	public @NotNull CompoundTag save(@NotNull CompoundTag tag) {
+
+		GsonBuilder gson = new GsonBuilder();
+//		gson.registerTypeAdapter(MultiblockCore.class, new MultiblockCoreAdapter());
+		gson.registerTypeAdapterFactory(new ChangeListenerAdapterFactory(MultiblockCore.class));
+		gson.registerTypeAdapter(MultiblockCore.class, new MultiblockCoreAdapter());
+		Gson parser = gson.create();
+
+		String listenersJson = parser.toJson(listeners);
+		String toAddJson = parser.toJson(listenersToAdd);
+		String toRemoveJson = parser.toJson(listenersToRemove);
+
+		tag.putString(LISTENER_SAVE_NAME, listenersJson);
+		tag.putString(TOADD_SAVE_NAME, toAddJson);
+		tag.putString(TOREMOVE_SAVE_NAME, toRemoveJson);
+
+		LogUtils.getLogger().info(listenersJson);
+
+
+		LogUtils.getLogger().info("Successfully saved ChangeListenerList data.");
+		return tag;
 	}
 }

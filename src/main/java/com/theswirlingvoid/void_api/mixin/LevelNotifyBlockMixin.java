@@ -18,6 +18,7 @@
 
 package com.theswirlingvoid.void_api.mixin;
 
+import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListenerHandler;
 import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListenerList;
 import com.theswirlingvoid.void_api.multipart.change_detection.CoreRegister;
 import net.minecraft.core.BlockPos;
@@ -48,9 +49,12 @@ public abstract class LevelNotifyBlockMixin {
 
 		// this refers to the level/world
 		if (!this.isClientSide && this.getServer() != null) {
-			new CoreRegister(this.getServer()).addBlockIfCore(pos,state, newstate);
 
-			ChangeListenerList.onBlockChange(pos, chunk, state, newstate);
+			new CoreRegister(this.getServer()).modifyBlockIfCore(chunk.getLevel(), pos, state, newstate);
+
+			ChangeListenerList.INSTANCE.update();
+			ChangeListenerHandler.onBlockChange(pos, chunk, state, newstate);
+
 		}
 	}
 }

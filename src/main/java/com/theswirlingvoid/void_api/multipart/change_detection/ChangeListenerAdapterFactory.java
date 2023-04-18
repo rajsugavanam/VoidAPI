@@ -18,16 +18,24 @@
 
 package com.theswirlingvoid.void_api.multipart.change_detection;
 
-import com.google.gson.JsonDeserializer;
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
-import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCore;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.LevelChunk;
+import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
 
-public interface ChangeListener {
-	void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate);
+// i am going to throw myself out the window
+public class ChangeListenerAdapterFactory implements TypeAdapterFactory {
 
-	boolean equals(ChangeListener l2);
+	private final Class<? extends ChangeListener> implementationClass;
+
+	public ChangeListenerAdapterFactory(Class<? extends ChangeListener> implementationClass) {
+		this.implementationClass = implementationClass;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+		if (ChangeListener.class.equals(type.getRawType())) {
+			return (TypeAdapter<T>) gson.getAdapter(implementationClass);
+		}
+		return null;
+	}
 }

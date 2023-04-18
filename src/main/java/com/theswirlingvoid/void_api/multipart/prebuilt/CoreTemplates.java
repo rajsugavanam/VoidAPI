@@ -27,11 +27,12 @@ import net.minecraft.world.level.block.Block;
 import net.minecraftforge.registries.RegistryObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class CoreTemplates {
 
-	public static List<Pair<RegistryObject<Block>, PrebuiltMultiblockTemplate>> coreTemplates = new ArrayList<>();
+	public static HashMap<Block, PrebuiltMultiblockTemplate> coreTemplates = new HashMap<>();
 
 	public static final PrebuiltMultiblockTemplate TEST_MULTIBLOCK =
 			new PrebuiltMultiblockTemplate(
@@ -39,22 +40,21 @@ public class CoreTemplates {
 					new BlockPos(1,2,1)
 			);
 
-	public static PrebuiltMultiblockTemplate addCoreBlock(RegistryObject<Block> blockRegistry, PrebuiltMultiblockTemplate template) {
-		Pair<RegistryObject<Block>, PrebuiltMultiblockTemplate> p = Pair.of(blockRegistry, template);
-		coreTemplates.add(p);
+	public static PrebuiltMultiblockTemplate addCoreBlock(Block block, PrebuiltMultiblockTemplate template) {
+		coreTemplates.put(block, template);
 		return template;
 	}
 
 	public static void registerCores() {
 
 		CoreTemplates.addCoreBlock(
-				ModBlocks.EXPERIMENTAL_MULTIPART,
+				ModBlocks.EXPERIMENTAL_MULTIPART.get(),
 				TEST_MULTIBLOCK
 		);
 
 	}
 
-	public static List<Pair<RegistryObject<Block>, PrebuiltMultiblockTemplate>> getCoreTemplates() {
+	public static HashMap<Block, PrebuiltMultiblockTemplate> getCoreTemplates() {
 		return coreTemplates;
 	}
 }

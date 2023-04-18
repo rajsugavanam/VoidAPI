@@ -18,16 +18,16 @@
 
 package com.theswirlingvoid.void_api.multipart.change_detection;
 
-import com.google.gson.JsonDeserializer;
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
-import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCore;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 
-public interface ChangeListener {
-	void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate);
+public class ChangeListenerHandler {
 
-	boolean equals(ChangeListener l2);
+	public static void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate) {
+
+		for (int i = 0; i < ChangeListenerList.INSTANCE.listeners.size(); i++) {
+			ChangeListenerList.INSTANCE.listeners.get(i).onBlockChange(pos, chunk, state, newstate);
+		}
+	}
 }
