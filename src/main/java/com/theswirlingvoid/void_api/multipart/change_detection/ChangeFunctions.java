@@ -42,8 +42,8 @@ public class ChangeFunctions {
 //		blockIsThere = (newState.getBlock() == block);
 //		blockWasThere = (oldState.getBlock() == block);
 
-		blockIsThere = (newState.getBlock() != Blocks.AIR);
-		blockWasThere = (oldState.getBlock() != Blocks.AIR);
+		blockIsThere = (newState.getBlock() == involvedBlock);
+		blockWasThere = (oldState.getBlock() == involvedBlock);
 
 		eventInvolvedBlock = (newState.getBlock() == involvedBlock || oldState.getBlock() == involvedBlock);
 	}

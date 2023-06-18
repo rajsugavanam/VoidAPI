@@ -18,13 +18,17 @@
 
 package com.theswirlingvoid.void_api.mixin;
 
+import com.mojang.logging.LogUtils;
 import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListenerHandler;
 import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListenerList;
-import com.theswirlingvoid.void_api.multipart.change_detection.CoreRegister;
+import com.theswirlingvoid.void_api.multipart.change_detection.CoreList;
+import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCore;
+import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCoreSavedData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -48,13 +52,14 @@ public abstract class LevelNotifyBlockMixin {
 									int unknown1, int unknown2, CallbackInfo info) {
 
 		// this refers to the level/world
-		if (!this.isClientSide && this.getServer() != null) {
+		if (!this.isClientSide && this.getServer() != null && chunk.getStatus() == ChunkStatus.FULL) {
 
-			new CoreRegister(this.getServer()).modifyBlockIfCore(chunk.getLevel(), pos, state, newstate);
+			if (MultiblockCore.isValidCoreBlock(newstate.getBlock()) || MultiblockCore.isValidCoreBlock(state.getBlock())) {
+				MultiblockCoreSavedData.get().modifyBlockIfCore(chunk.getLevel(), pos, state, newstate);
+			}
 
 			ChangeListenerList.INSTANCE.update();
 			ChangeListenerHandler.onBlockChange(pos, chunk, state, newstate);
-
 		}
 	}
 }

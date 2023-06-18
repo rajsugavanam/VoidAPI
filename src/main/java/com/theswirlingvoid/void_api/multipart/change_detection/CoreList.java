@@ -18,7 +18,6 @@
 
 package com.theswirlingvoid.void_api.multipart.change_detection;
 
-import com.mojang.logging.LogUtils;
 import com.theswirlingvoid.void_api.multipart.prebuilt.CoreTemplates;
 import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCore;
 import net.minecraft.core.BlockPos;
@@ -26,30 +25,30 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
-public class CoreRegister {
+public class CoreList {
 
 	private final MinecraftServer server;
 
-	public CoreRegister(MinecraftServer server) {
+	public CoreList(MinecraftServer server) {
 		this.server = server;
 	}
 
 	public void modifyBlockIfCore(Level level, BlockPos pos, BlockState state, BlockState newstate) {
-		CoreTemplates.getCoreTemplates().keySet().forEach((block) -> {
+		CoreTemplates.getCoreTemplates().forEach((template) -> {
 
-			ChangeFunctions funcs = new ChangeFunctions(block, state, newstate);
+			ChangeFunctions funcs = new ChangeFunctions(template.getMasterBlock(), state, newstate);
 
 			MultiblockCore potentialCore = new MultiblockCore(
-					block,
+					pos,
 					level.dimension(),
-					pos
+					template
 			);
 
 			if (funcs.involvedBlockPlaced()) {
 				ChangeListenerList.INSTANCE.scheduleAddListener(potentialCore);
 				potentialCore.onPlaced();
 			} else if (funcs.involvedBlockBroken()) {
-				ChangeListenerList.INSTANCE.scheduleRemoveListenerOfType(MultiblockCore.class, potentialCore);
+				ChangeListenerList.INSTANCE.scheduleRemoveListener(potentialCore);
 				potentialCore.onBroken();
 			}
 		});

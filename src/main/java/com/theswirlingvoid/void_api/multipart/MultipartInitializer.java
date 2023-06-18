@@ -25,7 +25,7 @@ import net.minecraft.world.level.Level;
 
 public class MultipartInitializer {
 	public static void initializeServer(MinecraftServer server) {
-		CoreTemplates.registerCores();
-		ChangeListenerList.INSTANCE.loadListenerList(server);
+		CoreTemplates.registerCores(server);
+//		ChangeListenerList.INSTANCE.loadListenerList(server);
 	}
 }

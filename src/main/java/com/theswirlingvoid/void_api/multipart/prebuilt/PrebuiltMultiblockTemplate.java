@@ -22,6 +22,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -32,31 +33,41 @@ import java.util.Optional;
 public class PrebuiltMultiblockTemplate {
 
 	private final ResourceLocation resLoc;
-	private final BlockPos multiblockMaster;
+	private final BlockPos masterPos;
+	private final Block masterBlock;
 	private StructureTemplate template;
+	private boolean addable = false;
 
-	public PrebuiltMultiblockTemplate(ResourceLocation resLoc, BlockPos multiblockMaster) {
+	public PrebuiltMultiblockTemplate(ResourceLocation resLoc, BlockPos masterPos, Block masterBlock) {
 		this.resLoc = resLoc;
-		this.multiblockMaster = multiblockMaster;
+		this.masterPos = masterPos;
+		this.masterBlock = masterBlock;
+	}
+
+	public boolean isAddable() {
+		return addable;
 	}
 
 	public ResourceLocation getTemplateLocation() {
 		return resLoc;
 	}
 
-	public StructureTemplate getTemplate(MinecraftServer server) {
+	public PrebuiltMultiblockTemplate addServerTemplate(MinecraftServer server) {
 		if (template == null) {
 			Optional<StructureTemplate> templateOpt = TemplateManager.getTemplate(resLoc, server);
 			if (templateOpt.isPresent()) {
 				template = templateOpt.get();
-				return template;
+				this.addable = true;
 			} else {
 				LogUtils.getLogger().error("Multiblock template at "+resLoc.toString()+"not found.");
 				throw new NullPointerException();
 			}
-		} else {
-			return template;
 		}
+		return this;
+	}
+
+	public Block getMasterBlock() {
+		return masterBlock;
 	}
 
 	public BlockPos getSize() {
@@ -65,6 +76,18 @@ public class PrebuiltMultiblockTemplate {
 		} else {
 			return null;
 		}
+	}
+
+	public BlockPos getCenterPos() {
+		return masterPos;
+	}
+
+	public BlockPos getCorner1CenterOffset() {
+		return masterPos.multiply(-1);
+	}
+
+	public BlockPos getCorner2CenterOffset() {
+		return new BlockPos(template.getSize().subtract(masterPos));
 	}
 
 	public static BlockPos withTransformations(BlockPos origin, BlockPos relative, Mirror mirror, Rotation rot) {

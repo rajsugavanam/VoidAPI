@@ -18,6 +18,7 @@
 
 package com.theswirlingvoid.void_api.multipart.change_detection;
 
+import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -26,8 +27,8 @@ public class ChangeListenerHandler {
 
 	public static void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate) {
 
-		for (int i = 0; i < ChangeListenerList.INSTANCE.listeners.size(); i++) {
-			ChangeListenerList.INSTANCE.listeners.get(i).onBlockChange(pos, chunk, state, newstate);
+		for (ChangeListener listener : ChangeListenerList.INSTANCE.getListeners()) {
+			listener.onBlockChange(pos, chunk, state, newstate);
 		}
 	}
 }

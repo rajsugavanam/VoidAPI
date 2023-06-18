@@ -19,14 +19,10 @@
 package com.theswirlingvoid.void_api.multipart.prebuilt;
 
 import com.google.gson.*;
-import com.mojang.logging.LogUtils;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -38,8 +34,8 @@ public class MultiblockCoreAdapter implements JsonSerializer<MultiblockCore>, Js
 	@Override
 	public JsonElement serialize(MultiblockCore src, Type typeOfSrc, JsonSerializationContext context) {
 
-		DataResult<JsonElement> levelResult = Level.RESOURCE_KEY_CODEC.encodeStart(JsonOps.COMPRESSED, src.getLevelName());
-		DataResult<JsonElement> posResult = BlockPos.CODEC.encodeStart(JsonOps.COMPRESSED, src.getCorePos());
+		DataResult<JsonElement> levelResult = Level.RESOURCE_KEY_CODEC.encodeStart(JsonOps.COMPRESSED, src.getDimension());
+		DataResult<JsonElement> posResult = BlockPos.CODEC.encodeStart(JsonOps.COMPRESSED, src.getListenerPos());
 		DataResult<JsonElement> blockResult = ForgeRegistries.BLOCKS.getCodec().encodeStart(JsonOps.COMPRESSED, src.getCoreBlock());
 
 		JsonObject root = new JsonObject();
@@ -60,9 +56,11 @@ public class MultiblockCoreAdapter implements JsonSerializer<MultiblockCore>, Js
 		DataResult<Block> blockResult = ForgeRegistries.BLOCKS.getCodec().parse(JsonOps.COMPRESSED, obj.get("coreBlock"));
 
 		return new MultiblockCore(
-			blockResult.getOrThrow(false, (s) -> {}),
+			posResult.getOrThrow(false, (s) -> {}),
 			levelResult.getOrThrow(false, (s) -> {}),
-			posResult.getOrThrow(false, (s) -> {})
+			CoreTemplates.getFromBlock(
+					blockResult.getOrThrow(false, (s) -> {})
+			)
 		);
 	}
 }

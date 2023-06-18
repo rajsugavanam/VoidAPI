@@ -18,23 +18,19 @@
 
 package com.theswirlingvoid.void_api.multipart.prebuilt;
 
-import com.google.gson.annotations.Expose;
-import com.ibm.icu.impl.Pair;
 import com.mojang.logging.LogUtils;
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.mojang.serialization.JsonOps;
 import com.theswirlingvoid.void_api.mixin.StructureTemplateAccessor;
-import com.theswirlingvoid.void_api.multipart.change_detection.ChangeFunctions;
 import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListener;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -42,47 +38,44 @@ import net.minecraftforge.registries.ForgeRegistries;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MultiblockCore implements ChangeListener {
-	private final ResourceKey<Level> dimension;
-	private final BlockPos corePos;
-	private final Block coreBlock;
+public class MultiblockCore extends ChangeListener {
+//	private final ResourceKey<Level> dimension;
+//	private final BlockPos corePos;
+	private final PrebuiltMultiblockTemplate template;
 
-	public MultiblockCore(Block coreBlock, ResourceKey<Level> dimension, BlockPos corePos) {
-		this.coreBlock = coreBlock;
-		this.dimension = dimension;
-		this.corePos = corePos;
+	public MultiblockCore(BlockPos corePos, ResourceKey<Level> dimension, PrebuiltMultiblockTemplate template) {
+		super(corePos,
+			dimension,
+			corePos.subtract(template.getCorner1CenterOffset().multiply(-1)),
+			corePos.subtract(template.getCorner2CenterOffset().multiply(-1))
+			// corePos + corner 1 or 2 offset
+		);
+		this.template = template;
 
-//		this.observingPositions = this.createObservingPositions();
 	}
 
-	public ResourceKey<Level> getLevelName() {
-		return dimension;
-	}
-
-	public BlockPos getCorePos() {
-		return corePos;
+	public MultiblockCore(BlockPos corePos, ResourceKey<Level> dimension, Block block) {
+		this(corePos, dimension, CoreTemplates.getFromBlock(block));
 	}
 
 	public Block getCoreBlock() {
-		return coreBlock;
+		return template.getMasterBlock();
 	}
 
-	private PrebuiltMultiblockTemplate getBlockTemplate() {
-		return CoreTemplates.getCoreTemplates().getOrDefault(coreBlock, null);
-	}
+//	private PrebuiltMultiblockTemplate getBlockTemplate() {
+//		return CoreTemplates.getCoreTemplates().getOrDefault(coreBlock, null);
+//	}
 
 	public List<BlockPos> getAbsoluteObservingPositions(MinecraftServer server) {
 
 		List<BlockPos> positions = new ArrayList<>();
 
-		PrebuiltMultiblockTemplate multiblockTemplate = getBlockTemplate();
-
 		StructureTemplate.Palette palette =
-				((StructureTemplateAccessor) multiblockTemplate.getTemplate(server)).getPalettes().get(0);
+				((StructureTemplateAccessor) template.addServerTemplate(server)).getPalettes().get(0);
 
 		palette.blocks().forEach((structBlockInfo) -> {
 			// this just adds them. `structBlockInfo.pos` is a RELATIVE position!
-			positions.add(corePos.subtract(structBlockInfo.pos.multiply(-1)));
+			positions.add(getListenerPos().subtract(structBlockInfo.pos.multiply(-1)));
 		});
 
 		return positions;
@@ -115,6 +108,49 @@ public class MultiblockCore implements ChangeListener {
 //		LogUtils.getLogger().info(affected.toString());
 	}
 
+	public CompoundTag getSaveData() {
+
+		CompoundTag saveData = new CompoundTag();
+
+		Tag lvlTag = Level.RESOURCE_KEY_CODEC.encodeStart(NbtOps.INSTANCE, super.getDimension())
+						.getOrThrow(false, (e) -> {});
+
+		Tag blockTag = ForgeRegistries.BLOCKS.getCodec().encodeStart(NbtOps.INSTANCE, getCoreBlock())
+						.getOrThrow(false, (e) -> {});
+
+		saveData.putLong("corePos", getListenerPos().asLong());
+		saveData.put("dimension", lvlTag);
+		saveData.put("coreBlock", blockTag);
+
+		return saveData;
+	}
+
+	public static MultiblockCore readSaveData(CompoundTag tag) {
+
+		CompoundTag saveData = new CompoundTag();
+
+		ResourceKey<Level> dimension = Level.RESOURCE_KEY_CODEC.parse(NbtOps.INSTANCE, tag.get("dimension"))
+				.getOrThrow(false, (e) -> {});
+
+		Block block = ForgeRegistries.BLOCKS.getCodec().parse(NbtOps.INSTANCE, tag.get("coreBlock"))
+				.getOrThrow(false, (e) -> {});
+
+		return new MultiblockCore(
+				BlockPos.of(tag.getLong("corePos")),
+				dimension,
+				block
+		);
+	}
+
+	public static boolean isValidCoreBlock(Block block) {
+		for (PrebuiltMultiblockTemplate template : CoreTemplates.getCoreTemplates()) {
+			if (template.getMasterBlock() == block) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public void onPlaced() {
 		LogUtils.getLogger().info("onBlockChange(); PLACED");
 	}
@@ -124,11 +160,16 @@ public class MultiblockCore implements ChangeListener {
 	}
 
 	@Override
-	public boolean equals(ChangeListener l2) {
-		if (l2 instanceof MultiblockCore core2) {
-			if ((core2.coreBlock.equals(this.coreBlock)) &&
-				(core2.corePos.equals(this.corePos)) &&
-				(core2.dimension.equals(this.dimension)))
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		} else if (o == null || getClass() != o.getClass()) {
+			return false;
+		} else {
+			MultiblockCore core = (MultiblockCore) o;
+			if ((core.getCoreBlock().equals(this.getCoreBlock())) &&
+					(core.getListenerPos().equals(this.getListenerPos())) &&
+					(core.getDimension().equals(this.getDimension())))
 			{
 				return true;
 			}

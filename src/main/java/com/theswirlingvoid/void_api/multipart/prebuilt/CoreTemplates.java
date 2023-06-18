@@ -18,43 +18,49 @@
 
 package com.theswirlingvoid.void_api.multipart.prebuilt;
 
-import com.ibm.icu.impl.Pair;
 import com.theswirlingvoid.void_api.ModMain;
 import com.theswirlingvoid.void_api.block.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.registries.RegistryObject;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class CoreTemplates {
 
-	public static HashMap<Block, PrebuiltMultiblockTemplate> coreTemplates = new HashMap<>();
+	public static Set<PrebuiltMultiblockTemplate> coreTemplates = new HashSet<>();
 
 	public static final PrebuiltMultiblockTemplate TEST_MULTIBLOCK =
 			new PrebuiltMultiblockTemplate(
 					new ResourceLocation(ModMain.MODID, "structures/multiblocks/test_multiblock.nbt"),
-					new BlockPos(1,2,1)
+					new BlockPos(1,2,1),
+					ModBlocks.EXPERIMENTAL_MULTIPART.get()
 			);
 
-	public static PrebuiltMultiblockTemplate addCoreBlock(Block block, PrebuiltMultiblockTemplate template) {
-		coreTemplates.put(block, template);
+	public static PrebuiltMultiblockTemplate addTemplate(PrebuiltMultiblockTemplate template) {
+		coreTemplates.add(template);
 		return template;
 	}
 
-	public static void registerCores() {
+	public static void registerCores(MinecraftServer server) {
 
-		CoreTemplates.addCoreBlock(
-				ModBlocks.EXPERIMENTAL_MULTIPART.get(),
-				TEST_MULTIBLOCK
+		CoreTemplates.addTemplate(
+				TEST_MULTIBLOCK.addServerTemplate(server)
 		);
 
 	}
 
-	public static HashMap<Block, PrebuiltMultiblockTemplate> getCoreTemplates() {
+	public static PrebuiltMultiblockTemplate getFromBlock(Block block) {
+		for (PrebuiltMultiblockTemplate template : coreTemplates) {
+			if (template.getMasterBlock().equals(block)) {
+				return template;
+			}
+		}
+		return null;
+	}
+
+	public static Set<PrebuiltMultiblockTemplate> getCoreTemplates() {
 		return coreTemplates;
 	}
 }

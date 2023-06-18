@@ -18,16 +18,61 @@
 
 package com.theswirlingvoid.void_api.multipart.change_detection;
 
-import com.google.gson.JsonDeserializer;
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
-import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCore;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 
-public interface ChangeListener {
-	void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate);
+public abstract class ChangeListener {
 
-	boolean equals(ChangeListener l2);
+	private final BlockPos listenerPos;
+	private final ResourceKey<Level> dimension;
+	private final BlockPos areaCorner1;
+	private final BlockPos areaCorner2;
+
+	protected ChangeListener(BlockPos center, ResourceKey<Level> dimension, BlockPos pos1, BlockPos pos2) {
+		this.listenerPos = center;
+		this.dimension = dimension;
+		this.areaCorner1 = pos1;
+		this.areaCorner2 = pos2;
+	}
+
+	public void addAsListener() {
+		ChangeListenerList.INSTANCE.scheduleAddListener(this);
+	}
+
+	public void removeAsListener() {
+		ChangeListenerList.INSTANCE.scheduleRemoveListener(this);
+	}
+
+	public BlockPos getListenerPos() {
+		return listenerPos;
+	}
+
+	public ResourceKey<Level> getDimension() {
+		return dimension;
+	}
+
+	public BlockPos getAreaCorner1() {
+		return areaCorner1;
+	}
+
+	public BlockPos getAreaCorner2() {
+		return areaCorner2;
+	}
+
+	public abstract void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate);
+
+//	public abstract CompoundTag getSaveData();
+//
+//	public abstract void loadData();
+
+	public boolean equals(ChangeListener l2) {
+		if (l2.listenerPos.equals(this.listenerPos) && l2.dimension.equals(this.dimension)) {
+			return true;
+		}
+		return false;
+	}
 }
