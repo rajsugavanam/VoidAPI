@@ -103,14 +103,22 @@ public class MultiblockCore extends ChangeListener {
 
 	private BlockPos withTransformations(BlockPos corePos, BlockPos relative, Mirror mirror, Rotation rot) {
 		StructurePlaceSettings settings =
-				new StructurePlaceSettings().setRotation(rot).setMirror(mirror).setRotationPivot(template.getCenterPos());
+				new StructurePlaceSettings()
+						.setMirror(mirror)
+						.setRotationPivot(template.getCenterPos())
+						.setRotation(rot);
 		BlockPos corner = corePos.subtract(template.getCenterPos());
-		return corner.offset(StructureTemplate.calculateRelativePosition(settings, relative));
+
+		BlockPos shiftedCenter = StructureTemplate.calculateRelativePosition(settings, template.getCenterPos());
+		BlockPos shiftedRelative = StructureTemplate.calculateRelativePosition(settings, relative);
+		BlockPos totalOffset = shiftedRelative.subtract(shiftedCenter);
+
+		return corePos.offset(totalOffset);
 	}
 
-	public BlockPos transformedOffsetPos(BlockPos originOffset, Mirror mirror, Rotation rot) {
+	public BlockPos transformedOffsetPos(BlockPos cornerOffset, Mirror mirror, Rotation rot) {
 		BlockPos corePos = getListenerPos();
-		return withTransformations(corePos, originOffset, mirror, rot);
+		return withTransformations(corePos, cornerOffset, mirror, rot);
 	}
 
 	@Override
@@ -119,8 +127,8 @@ public class MultiblockCore extends ChangeListener {
 		StructureTemplate.Palette palette = getPalette();
 
 		for (StructureTemplate.StructureBlockInfo sbi : palette.blocks()) {
-			BlockPos currentPos = transformedOffsetPos(sbi.pos, Mirror.NONE, Rotation.CLOCKWISE_90);
-			BlockState currentBlock = sbi.state.mirror(Mirror.NONE).rotate(Rotation.CLOCKWISE_90);
+			BlockPos currentPos = transformedOffsetPos(sbi.pos, Mirror.FRONT_BACK, Rotation.COUNTERCLOCKWISE_90);
+			BlockState currentBlock = sbi.state.mirror(Mirror.FRONT_BACK).rotate(Rotation.COUNTERCLOCKWISE_90);
 			if (sbi.state.getBlock() != template.getMasterBlock()) {
 				chunk.getLevel().setBlockAndUpdate(currentPos, currentBlock);
 			}
