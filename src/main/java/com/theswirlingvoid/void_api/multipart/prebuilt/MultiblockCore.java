@@ -22,6 +22,7 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.JsonOps;
 import com.theswirlingvoid.void_api.mixin.StructureTemplateAccessor;
 import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListener;
+import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListenerList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
@@ -30,10 +31,16 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraftforge.fml.util.thread.SidedThreadGroups;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,11 +50,11 @@ public class MultiblockCore extends ChangeListener {
 //	private final BlockPos corePos;
 	private final PrebuiltMultiblockTemplate template;
 
-	public MultiblockCore(BlockPos corePos, ResourceKey<Level> dimension, PrebuiltMultiblockTemplate template) {
-		super(corePos,
+	public MultiblockCore(BlockPos listenerPos, ResourceKey<Level> dimension, PrebuiltMultiblockTemplate template) {
+		super(listenerPos,
 			dimension,
-			corePos.subtract(template.getCorner1CenterOffset().multiply(-1)),
-			corePos.subtract(template.getCorner2CenterOffset().multiply(-1))
+			listenerPos.subtract(template.getCorner1CenterOffset().multiply(-1)),
+			listenerPos.subtract(template.getCorner2CenterOffset().multiply(-1))
 			// corePos + corner 1 or 2 offset
 		);
 		this.template = template;
@@ -62,50 +69,62 @@ public class MultiblockCore extends ChangeListener {
 		return template.getMasterBlock();
 	}
 
-//	private PrebuiltMultiblockTemplate getBlockTemplate() {
-//		return CoreTemplates.getCoreTemplates().getOrDefault(coreBlock, null);
-//	}
+	public StructureTemplate.Palette getPalette() {
+		if (Thread.currentThread().getThreadGroup() == SidedThreadGroups.SERVER) {
+			MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+			if (server != null) {
+				return ((StructureTemplateAccessor) template.addServerTemplate(server).getStructureTemplate()).getPalettes().get(0);
+			}
+		}
+		return null;
+	}
 
-	public List<BlockPos> getAbsoluteObservingPositions(MinecraftServer server) {
+	public List<BlockPos> getAbsoluteObservingPositions() {
 
 		List<BlockPos> positions = new ArrayList<>();
 
-		StructureTemplate.Palette palette =
-				((StructureTemplateAccessor) template.addServerTemplate(server)).getPalettes().get(0);
+		StructureTemplate.Palette palette = getPalette();
 
 		palette.blocks().forEach((structBlockInfo) -> {
-			// this just adds them. `structBlockInfo.pos` is a RELATIVE position!
-			positions.add(getListenerPos().subtract(structBlockInfo.pos.multiply(-1)));
+			BlockPos posToAdd = structurePosToOriginOffset(structBlockInfo.pos);
+			if (posToAdd != getListenerPos()) {
+				positions.add(posToAdd);
+			}
 		});
-
 		return positions;
+	}
+
+	public BlockPos structurePosToOriginOffset(BlockPos structPos) {
+
+		BlockPos corePos = getListenerPos();
+		BlockPos corner = corePos.subtract(template.getCenterPos());
+		return corner.subtract(structPos.multiply(-1)); // this just adds them. mojang please make an add function
+	}
+
+	private BlockPos withTransformations(BlockPos corePos, BlockPos relative, Mirror mirror, Rotation rot) {
+		StructurePlaceSettings settings =
+				new StructurePlaceSettings().setRotation(rot).setMirror(mirror).setRotationPivot(template.getCenterPos());
+		BlockPos corner = corePos.subtract(template.getCenterPos());
+		return corner.offset(StructureTemplate.calculateRelativePosition(settings, relative));
+	}
+
+	public BlockPos transformedOffsetPos(BlockPos originOffset, Mirror mirror, Rotation rot) {
+		BlockPos corePos = getListenerPos();
+		return withTransformations(corePos, originOffset, mirror, rot);
 	}
 
 	@Override
 	public void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate) {
-		// experimental code
-		// idk wtf chunkstatus full means lmao
-//		if (chunk.getLevel().dimension() == dimension) {
-//			if (chunk.getStatus() == ChunkStatus.FULL) {
-//				if (pos == corePos) {
-//					ChangeFunctions funcs = new ChangeFunctions(state.getBlock(), state, newstate);
-//
-//					if (funcs.involvedBlockPlaced()) {
-//						LogUtils.getLogger().info("onBlockChange(); PLACED");
-//					} else if (funcs.involvedBlockBroken()) {
-//						LogUtils.getLogger().info("onBlockChange(); BROKEN");
-//					}
-//				}
-//			}
-//		}
-//		BlockPos affected = PrebuiltMultiblockTemplate.withTransformations(
-//				pos,
-//				new BlockPos(2,2,3),
-//				Mirror.NONE,
-//				Rotation.CLOCKWISE_90
-//		);
-//
-//		LogUtils.getLogger().info(affected.toString());
+
+		StructureTemplate.Palette palette = getPalette();
+
+		for (StructureTemplate.StructureBlockInfo sbi : palette.blocks()) {
+			BlockPos currentPos = transformedOffsetPos(sbi.pos, Mirror.NONE, Rotation.CLOCKWISE_90);
+			BlockState currentBlock = sbi.state.mirror(Mirror.NONE).rotate(Rotation.CLOCKWISE_90);
+			if (sbi.state.getBlock() != template.getMasterBlock()) {
+				chunk.getLevel().setBlockAndUpdate(currentPos, currentBlock);
+			}
+		}
 	}
 
 	public CompoundTag getSaveData() {

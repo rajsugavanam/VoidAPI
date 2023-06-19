@@ -35,27 +35,7 @@ public class ChangeListenerList {
 	private Set<ChangeListener> listenersToRemove = new HashSet<>();
 	private Set<ChangeListener> listenersToAdd = new HashSet<>();
 
-//	private static final String DATA_FILE_NAME = "changelistenerlist";
-//	private static final String LISTENER_SAVE_NAME = "listeners";
-//	private static final String TOADD_SAVE_NAME = "listenersToAdd";
-//	private static final String TOREMOVE_SAVE_NAME = "listenersToRemove";
-
 	private ChangeListenerList() {} // no construction for u!
-
-//	@Override
-//	public CompoundTag save(CompoundTag tag) {
-//		update(false); // if updating made this dirty we would be stuck in an infinite loop
-//		CompoundTag listenerTag = new CompoundTag();
-//		int idx = 0;
-//		for (ChangeListener listener : listeners) {
-//			listenerTag.put(String.valueOf(idx), listener.getSaveData());
-//			idx++;
-//		}
-//
-//		CompoundTag masterTag = new CompoundTag();
-//		masterTag.put("listenerData", listenerTag);
-//		return masterTag;
-//	}
 
 	public Set<ChangeListener> getListeners() {
 		return listeners;
@@ -66,47 +46,17 @@ public class ChangeListenerList {
 	}
 
 	/**
-	 * Load the listener data into the <code>INSTANCE</code> field.
-	 * @param server The server where the the list data is held
-	 */
-//	public void loadListenerList(MinecraftServer server) {
-//		if (!server.overworld().isClientSide) {
-//			DimensionDataStorage storage = server.overworld().getDataStorage();
-//			storage.computeIfAbsent(
-//					this::load, // if data DOES exist
-//					this::create, // if data doesn't exist
-//					DATA_FILE_NAME
-//			);
-//		} else {
-//			throw new RuntimeException("An error has occured. Do not run ChangeListenerList::getListenerList from the client.");
-//		}
-//	}
-//
-//	public ChangeListenerList create() {
-//		return INSTANCE;
-//	}
-//
-//	public ChangeListenerList load(CompoundTag savedTag) {
-//		CompoundTag listenerTag = savedTag.getCompound("listenerData");
-//		for (String key : listenerTag.getAllKeys()) {
-//			CompoundTag subTag = listenerTag.getCompound(key);
-//		}
-//	}
-
-	/**
 	 * Schedules a listener to be added. It will be added to the list when <code>update()</code> is called.
 	 * @param listener The listener object to add
 	 */
 	public void scheduleAddListener(ChangeListener listener) {
 		listenersToAdd.add(listener);
-		LogUtils.getLogger().info("Added listener "+listener);
 	}
 	public void scheduleRemoveListener(ChangeListener listener) {
 		for (Iterator<ChangeListener> i = listeners.iterator(); i.hasNext();) {
 			ChangeListener currentListener = i.next();
 			if (currentListener.equals(listener)) {
 				listenersToRemove.add(currentListener);
-				LogUtils.getLogger().info("Removed listener "+currentListener);
 				return;
 			}
 		}
@@ -128,29 +78,4 @@ public class ChangeListenerList {
 	public void clearListeners() {
 		listeners.clear();
 	}
-
-//	@Override
-//	public @NotNull CompoundTag save(@NotNull CompoundTag tag) {
-//
-//		GsonBuilder gson = new GsonBuilder();
-////		gson.registerTypeAdapter(MultiblockCore.class, new MultiblockCoreAdapter());
-////		gson.registerTypeAdapterFactory(new ChangeListenerAdapterFactory(MultiblockCore.class));
-////		gson.registerTypeAdapter(MultiblockCore.class, new MultiblockCoreAdapter());
-//		gson.registerTypeAdapterFactory(ChangeListener.class, new ChangeListenerAdapter());
-//		Gson parser = gson.create();
-//
-//		String listenersJson = parser.toJson(listeners);
-//		String toAddJson = parser.toJson(listenersToAdd);
-//		String toRemoveJson = parser.toJson(listenersToRemove);
-//
-//		tag.putString(LISTENER_SAVE_NAME, listenersJson);
-//		tag.putString(TOADD_SAVE_NAME, toAddJson);
-//		tag.putString(TOREMOVE_SAVE_NAME, toRemoveJson);
-//
-//		LogUtils.getLogger().info(listenersJson);
-//
-//
-//		LogUtils.getLogger().info("Successfully saved ChangeListenerList data.");
-//		return tag;
-//	}
 }

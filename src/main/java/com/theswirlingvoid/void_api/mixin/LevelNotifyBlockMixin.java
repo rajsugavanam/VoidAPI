@@ -18,10 +18,8 @@
 
 package com.theswirlingvoid.void_api.mixin;
 
-import com.mojang.logging.LogUtils;
 import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListenerHandler;
 import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListenerList;
-import com.theswirlingvoid.void_api.multipart.change_detection.CoreList;
 import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCore;
 import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCoreSavedData;
 import net.minecraft.core.BlockPos;

@@ -61,7 +61,7 @@ public class MultiblockCoreSavedData extends SavedData {
 
 	private void loadCore(MultiblockCore core, boolean dirty) {
 		cores.add(core);
-		ChangeListenerList.INSTANCE.scheduleAddListener(core);
+		core.changeListen();
 		if (dirty) {
 			setDirty();
 		}
@@ -73,12 +73,11 @@ public class MultiblockCoreSavedData extends SavedData {
 
 	public void addCore(MultiblockCore core) {
 		loadCore(core, true);
-		LogUtils.getLogger().info(String.valueOf(cores.size()));
 	}
 
 	public void removeCore(MultiblockCore core) {
 		cores.remove(core);
-		ChangeListenerList.INSTANCE.scheduleRemoveListener(core);
+		core.stopChangeListen();
 		setDirty();
 	}
 
@@ -98,8 +97,6 @@ public class MultiblockCoreSavedData extends SavedData {
 	public static MultiblockCoreSavedData load(CompoundTag compoundTag) {
 		MultiblockCoreSavedData data = new MultiblockCoreSavedData();
 		ListTag listTag = compoundTag.getList("coreData", Tag.TAG_COMPOUND);
-		LogUtils.getLogger().info(String.valueOf(listTag.size()));
-		LogUtils.getLogger().info(ChangeListenerList.INSTANCE.getListeners().toString());
 		for (Tag tag : listTag) {
 			CompoundTag cTag = (CompoundTag) tag;
 			data.loadCore(MultiblockCore.readSaveData(cTag), false);

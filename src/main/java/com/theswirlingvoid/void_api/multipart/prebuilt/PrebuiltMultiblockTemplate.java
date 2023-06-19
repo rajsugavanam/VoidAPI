@@ -66,6 +66,10 @@ public class PrebuiltMultiblockTemplate {
 		return this;
 	}
 
+	public StructureTemplate getStructureTemplate() {
+		return template;
+	}
+
 	public Block getMasterBlock() {
 		return masterBlock;
 	}
@@ -88,10 +92,5 @@ public class PrebuiltMultiblockTemplate {
 
 	public BlockPos getCorner2CenterOffset() {
 		return new BlockPos(template.getSize().subtract(masterPos));
-	}
-
-	public static BlockPos withTransformations(BlockPos origin, BlockPos relative, Mirror mirror, Rotation rot) {
-		StructurePlaceSettings settings = new StructurePlaceSettings().setRotation(rot).setMirror(mirror);
-		return origin.offset(StructureTemplate.calculateRelativePosition(settings, relative));
 	}
 }

@@ -31,10 +31,17 @@ public class CoreTemplates {
 
 	public static Set<PrebuiltMultiblockTemplate> coreTemplates = new HashSet<>();
 
+//	public static final PrebuiltMultiblockTemplate TEST_MULTIBLOCK =
+//			new PrebuiltMultiblockTemplate(
+//					new ResourceLocation(ModMain.MODID, "structures/multiblocks/test_multiblock.nbt"),
+//					new BlockPos(1,2,1),
+//					ModBlocks.EXPERIMENTAL_MULTIPART.get()
+//			);
+
 	public static final PrebuiltMultiblockTemplate TEST_MULTIBLOCK =
 			new PrebuiltMultiblockTemplate(
-					new ResourceLocation(ModMain.MODID, "structures/multiblocks/test_multiblock.nbt"),
-					new BlockPos(1,2,1),
+					new ResourceLocation(ModMain.MODID, "structures/multiblocks/test_multiblock2.nbt"),
+					new BlockPos(2,7,2),
 					ModBlocks.EXPERIMENTAL_MULTIPART.get()
 			);
 

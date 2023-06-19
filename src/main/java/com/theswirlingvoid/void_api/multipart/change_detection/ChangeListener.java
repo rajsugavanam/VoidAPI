@@ -19,7 +19,6 @@
 package com.theswirlingvoid.void_api.multipart.change_detection;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -65,9 +64,13 @@ public abstract class ChangeListener {
 
 	public abstract void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate);
 
-//	public abstract CompoundTag getSaveData();
-//
-//	public abstract void loadData();
+	public void changeListen() {
+		ChangeListenerList.INSTANCE.scheduleAddListener(this);
+	}
+
+	public void stopChangeListen() {
+		ChangeListenerList.INSTANCE.scheduleRemoveListener(this);
+	}
 
 	public boolean equals(ChangeListener l2) {
 		if (l2.listenerPos.equals(this.listenerPos) && l2.dimension.equals(this.dimension)) {
