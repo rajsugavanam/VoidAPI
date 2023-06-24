@@ -18,11 +18,9 @@
 
 package com.theswirlingvoid.void_api.multipart;
 
-import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListenerList;
 import com.theswirlingvoid.void_api.multipart.prebuilt.CoreTemplates;
 import com.theswirlingvoid.void_api.multipart.prebuilt.MultiblockCoreSavedData;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.level.Level;
 
 public class MultipartInitializer {
 	public static void initializeServer(MinecraftServer server) {

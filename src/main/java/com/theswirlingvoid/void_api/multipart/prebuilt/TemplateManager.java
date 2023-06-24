@@ -19,7 +19,6 @@
 package com.theswirlingvoid.void_api.multipart.prebuilt;
 
 import com.theswirlingvoid.void_api.mixin.StructureTemplateAccessor;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;

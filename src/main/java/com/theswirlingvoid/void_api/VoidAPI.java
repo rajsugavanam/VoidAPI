@@ -21,19 +21,20 @@ package com.theswirlingvoid.void_api;
 import com.mojang.logging.LogUtils;
 import com.theswirlingvoid.void_api.block.ModBlocks;
 import com.theswirlingvoid.void_api.multipart.MultipartInitializer;
+import com.theswirlingvoid.void_api.network.PacketHandler;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
 // The value here should match an entry in the META-INF/mods.toml file
-@Mod(ModMain.MODID)
-public class ModMain {
+@Mod(VoidAPI.MODID)
+public class VoidAPI {
 
 	// Define mod id in a common place for everything to reference
 	public static final String MODID = "void_api";
@@ -45,11 +46,12 @@ public class ModMain {
 //	public static final RegistryObject<Block> EXAMPLE_BLOCK = BLOCKS.register("example_block", () -> new Block(BlockBehaviour.Properties.of(Material.STONE)));
 //	public static final RegistryObject<Item> EXAMPLE_BLOCK_ITEM = ITEMS.register("example_block", () -> new BlockItem(EXAMPLE_BLOCK.get(), new Item.Properties().tab(CreativeModeTab.TAB_BUILDING_BLOCKS)));
 
-	public ModMain() {
+	public VoidAPI() {
 		modEventBus.addListener(this::commonSetup);
 		ModBlocks.registerBlocks();
 
 		MinecraftForge.EVENT_BUS.register(this);
+		PacketHandler.init();
 	}
 
 	private void commonSetup(final FMLCommonSetupEvent event) {

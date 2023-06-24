@@ -23,15 +23,15 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Mirror;
-import net.minecraft.world.level.block.Rotation;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 public class PrebuiltMultiblockTemplate {
 
+	private static final Set<Block> knownTemplateBlocks = new HashSet<>();
 	private final ResourceLocation resLoc;
 	private final BlockPos masterPos;
 	private final Block masterBlock;
@@ -41,7 +41,12 @@ public class PrebuiltMultiblockTemplate {
 	public PrebuiltMultiblockTemplate(ResourceLocation resLoc, BlockPos masterPos, Block masterBlock) {
 		this.resLoc = resLoc;
 		this.masterPos = masterPos;
-		this.masterBlock = masterBlock;
+		if (!knownTemplateBlocks.contains(masterBlock)) {
+			this.masterBlock = masterBlock;
+			knownTemplateBlocks.add(masterBlock);
+		} else {
+			throw new RuntimeException();
+		}
 	}
 
 	public boolean isAddable() {
@@ -52,7 +57,7 @@ public class PrebuiltMultiblockTemplate {
 		return resLoc;
 	}
 
-	public PrebuiltMultiblockTemplate addServerTemplate(MinecraftServer server) {
+	public PrebuiltMultiblockTemplate withServerTemplate(MinecraftServer server) {
 		if (template == null) {
 			Optional<StructureTemplate> templateOpt = TemplateManager.getTemplate(resLoc, server);
 			if (templateOpt.isPresent()) {
@@ -82,6 +87,10 @@ public class PrebuiltMultiblockTemplate {
 		}
 	}
 
+	public ResourceLocation getResLoc() {
+		return resLoc;
+	}
+
 	public BlockPos getCenterPos() {
 		return masterPos;
 	}
@@ -92,5 +101,25 @@ public class PrebuiltMultiblockTemplate {
 
 	public BlockPos getCorner2CenterOffset() {
 		return new BlockPos(template.getSize().subtract(masterPos));
+	}
+
+	@Override
+	public boolean equals(Object o) {
+
+		if (this == o) {
+			return true;
+		} else if (o == null || o.getClass() != getClass()) {
+			return false;
+		} else {
+			PrebuiltMultiblockTemplate pmt = (PrebuiltMultiblockTemplate) o;
+			// prebuilt templates should only have one block assigned.
+			// A Set of templates can only contain one template for each block
+			if (masterBlock.equals(pmt.masterBlock)) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+
 	}
 }

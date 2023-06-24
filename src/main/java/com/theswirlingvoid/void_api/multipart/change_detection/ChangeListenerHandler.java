@@ -18,7 +18,6 @@
 
 package com.theswirlingvoid.void_api.multipart.change_detection;
 
-import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;

@@ -22,8 +22,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.Material;
 
-public class ExperimentalMultipart extends Block {
-	public ExperimentalMultipart() {
+public class MultiblockCoreBlock extends Block {
+	public MultiblockCoreBlock() {
 		super(getBaseProperties());
 	}
 

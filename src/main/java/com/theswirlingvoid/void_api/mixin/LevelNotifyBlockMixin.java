@@ -50,14 +50,17 @@ public abstract class LevelNotifyBlockMixin {
 									int unknown1, int unknown2, CallbackInfo info) {
 
 		// this refers to the level/world
-		if (!this.isClientSide && this.getServer() != null && chunk.getStatus() == ChunkStatus.FULL) {
+		if (chunk.getStatus() == ChunkStatus.FULL) {
 
-			if (MultiblockCore.isValidCoreBlock(newstate.getBlock()) || MultiblockCore.isValidCoreBlock(state.getBlock())) {
-				MultiblockCoreSavedData.get().modifyBlockIfCore(chunk.getLevel(), pos, state, newstate);
+
+			if (!this.isClientSide && this.getServer() != null) {
+				if (MultiblockCore.isValidCoreBlock(newstate.getBlock()) || MultiblockCore.isValidCoreBlock(state.getBlock())) {
+					MultiblockCoreSavedData.get().modifyBlockIfCore(chunk.getLevel(), pos, state, newstate);
+				}
+				ChangeListenerList.INSTANCE.update();
+				ChangeListenerHandler.onBlockChange(pos, chunk, state, newstate);
 			}
 
-			ChangeListenerList.INSTANCE.update();
-			ChangeListenerHandler.onBlockChange(pos, chunk, state, newstate);
 		}
 	}
 }

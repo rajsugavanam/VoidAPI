@@ -18,10 +18,7 @@
 
 package com.theswirlingvoid.void_api.multipart.prebuilt;
 
-import com.mojang.logging.LogUtils;
 import com.theswirlingvoid.void_api.multipart.change_detection.ChangeFunctions;
-import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListener;
-import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListenerList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -117,10 +114,10 @@ public class MultiblockCoreSavedData extends SavedData {
 
 			if (funcs.involvedBlockPlaced()) {
 				this.addCore(potentialCore);
-				potentialCore.onPlaced();
+				potentialCore.onPlaced(pos, newstate, level);
 			} else if (funcs.involvedBlockBroken()) {
 				this.removeCore(potentialCore);
-				potentialCore.onBroken();
+				potentialCore.onBroken(pos, state, level);
 			}
 		});
 	}

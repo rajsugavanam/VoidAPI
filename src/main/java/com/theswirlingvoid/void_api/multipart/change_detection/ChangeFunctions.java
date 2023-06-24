@@ -18,12 +18,8 @@
 
 package com.theswirlingvoid.void_api.multipart.change_detection;
 
-import com.mojang.logging.LogUtils;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-
-import java.util.logging.Logger;
 
 public class ChangeFunctions {
 	private final BlockState oldState;

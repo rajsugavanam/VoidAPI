@@ -18,14 +18,17 @@
 
 package com.theswirlingvoid.void_api.multipart.prebuilt;
 
-import com.theswirlingvoid.void_api.ModMain;
+import com.theswirlingvoid.void_api.VoidAPI;
 import com.theswirlingvoid.void_api.block.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class CoreTemplates {
 
@@ -38,11 +41,27 @@ public class CoreTemplates {
 //					ModBlocks.EXPERIMENTAL_MULTIPART.get()
 //			);
 
+	public static Boolean isBlockSavedCore(BlockPos pos, Level level, BlockState state) {
+
+		// only can be run on server otherwise u get optional empty
+		if (!level.isClientSide()) {
+			for (PrebuiltMultiblockTemplate idxTemplate : CoreTemplates.getCoreTemplates()) {
+				MultiblockCore potentialCore =
+						MultiblockCore.createOnServer(pos, level.dimension(), state.getBlock());
+				if (MultiblockCoreSavedData.get().getCores().contains(potentialCore)) {
+					return true;
+				}
+			}
+		}
+		return null;
+
+	}
+
 	public static final PrebuiltMultiblockTemplate TEST_MULTIBLOCK =
 			new PrebuiltMultiblockTemplate(
-					new ResourceLocation(ModMain.MODID, "structures/multiblocks/test_multiblock2.nbt"),
+					new ResourceLocation(VoidAPI.MODID, "structures/multiblocks/test_multiblock2.nbt"),
 					new BlockPos(2,7,2),
-					ModBlocks.EXPERIMENTAL_MULTIPART.get()
+					ModBlocks.MULTIBLOCK_CORE.get()
 			);
 
 	public static PrebuiltMultiblockTemplate addTemplate(PrebuiltMultiblockTemplate template) {
@@ -53,7 +72,7 @@ public class CoreTemplates {
 	public static void registerCores(MinecraftServer server) {
 
 		CoreTemplates.addTemplate(
-				TEST_MULTIBLOCK.addServerTemplate(server)
+				TEST_MULTIBLOCK.withServerTemplate(server)
 		);
 
 	}

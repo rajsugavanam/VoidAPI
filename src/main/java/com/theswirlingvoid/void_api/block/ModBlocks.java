@@ -18,7 +18,7 @@
 
 package com.theswirlingvoid.void_api.block;
 
-import com.theswirlingvoid.void_api.ModMain;
+import com.theswirlingvoid.void_api.VoidAPI;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
@@ -28,28 +28,28 @@ import net.minecraftforge.registries.RegistryObject;
 
 public class ModBlocks {
 	public static final DeferredRegister<Block> BLOCKS =
-			DeferredRegister.create(ForgeRegistries.BLOCKS, ModMain.MODID);
+			DeferredRegister.create(ForgeRegistries.BLOCKS, VoidAPI.MODID);
 	public static final DeferredRegister<Item> BLOCK_ITEMS =
-			DeferredRegister.create(ForgeRegistries.ITEMS, ModMain.MODID);
+			DeferredRegister.create(ForgeRegistries.ITEMS, VoidAPI.MODID);
 	//------------------------------------------------------------------
-	public static final RegistryObject<Block> EXPERIMENTAL_MULTIPART =
+	public static final RegistryObject<Block> MULTIBLOCK_CORE =
 			BLOCKS.register(
-					"experimental_multipart",
-					() -> new ExperimentalMultipart()
+					"multiblock_core",
+					() -> new MultiblockCoreBlock()
 			);
 
 
 	//------------------------------------------------------------------
-	public static final RegistryObject<Item> EXPERIMENTAL_MULTIPART_BI =
+	public static final RegistryObject<Item> MULTIBLOCK_CORE_BI =
 			BLOCK_ITEMS.register(
-					"experimental_multipart",
-					() -> new BlockItem(EXPERIMENTAL_MULTIPART.get(), new Item.Properties())
+					"multiblock_core",
+					() -> new BlockItem(MULTIBLOCK_CORE.get(), new Item.Properties())
 			);
 
 	
 	//------------------------------------------------------------------
 	public static void registerBlocks() {
-		BLOCKS.register(ModMain.modEventBus);
-		BLOCK_ITEMS.register(ModMain.modEventBus);
+		BLOCKS.register(VoidAPI.modEventBus);
+		BLOCK_ITEMS.register(VoidAPI.modEventBus);
 	}
 }

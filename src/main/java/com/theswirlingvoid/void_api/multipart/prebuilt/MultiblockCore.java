@@ -19,10 +19,8 @@
 package com.theswirlingvoid.void_api.multipart.prebuilt;
 
 import com.mojang.logging.LogUtils;
-import com.mojang.serialization.JsonOps;
 import com.theswirlingvoid.void_api.mixin.StructureTemplateAccessor;
 import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListener;
-import com.theswirlingvoid.void_api.multipart.change_detection.ChangeListenerList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
@@ -31,7 +29,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
@@ -42,8 +39,8 @@ import net.minecraftforge.fml.util.thread.SidedThreadGroups;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MultiblockCore extends ChangeListener {
 //	private final ResourceKey<Level> dimension;
@@ -61,45 +58,78 @@ public class MultiblockCore extends ChangeListener {
 
 	}
 
-	public MultiblockCore(BlockPos corePos, ResourceKey<Level> dimension, Block block) {
-		this(corePos, dimension, CoreTemplates.getFromBlock(block));
+	public static MultiblockCore createOnServer(BlockPos corePos, ResourceKey<Level> level, Block block) {
+		if (Thread.currentThread().getThreadGroup() == SidedThreadGroups.SERVER) {
+			return new MultiblockCore(corePos, level, CoreTemplates.getFromBlock(block));
+		} else {
+			return null;
+		}
+	}
+
+	@Override
+	public void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate) {
+
+//		StructureTemplate.Palette palette = getPalette();
+//
+//		for (StructureTemplate.StructureBlockInfo sbi : palette.blocks()) {
+//			BlockPos currentPos = transformedOffsetPos(sbi.pos, Mirror.FRONT_BACK, Rotation.COUNTERCLOCKWISE_90);
+//			BlockState currentBlock = sbi.state.mirror(Mirror.FRONT_BACK).rotate(Rotation.COUNTERCLOCKWISE_90);
+//			if (sbi.state.getBlock() != template.getMasterBlock()) {
+//				chunk.getLevel().setBlockAndUpdate(currentPos, currentBlock);
+//			}
+//		}
+
+	}
+
+	public void onPlaced(BlockPos pos, BlockState state, Level level) {
+		LogUtils.getLogger().info("onBlockChange(); PLACED");
+	}
+
+	public void onBroken(BlockPos pos, BlockState state, Level level) {
+		LogUtils.getLogger().info("onBlockChange(); BROKEN");
+		// TODO: Send packet to client to stop rendering any possible holos at this location
 	}
 
 	public Block getCoreBlock() {
 		return template.getMasterBlock();
 	}
 
+	public PrebuiltMultiblockTemplate getTemplate() {
+		return template;
+	}
+
 	public StructureTemplate.Palette getPalette() {
 		if (Thread.currentThread().getThreadGroup() == SidedThreadGroups.SERVER) {
 			MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
 			if (server != null) {
-				return ((StructureTemplateAccessor) template.addServerTemplate(server).getStructureTemplate()).getPalettes().get(0);
+				return ((StructureTemplateAccessor) template.withServerTemplate(server).getStructureTemplate()).getPalettes().get(0);
 			}
 		}
 		return null;
 	}
 
-	public List<BlockPos> getAbsoluteObservingPositions() {
+	public Map<BlockPos, BlockState> getAbsoluteObservingPositions(Mirror mirror, Rotation rotation) {
 
-		List<BlockPos> positions = new ArrayList<>();
+		Map<BlockPos,BlockState> positions = new HashMap<>();
 
 		StructureTemplate.Palette palette = getPalette();
 
-		palette.blocks().forEach((structBlockInfo) -> {
-			BlockPos posToAdd = structurePosToOriginOffset(structBlockInfo.pos);
+		palette.blocks().forEach((sbi) -> {
+//			BlockPos posToAdd = structurePosToOriginOffset(structBlockInfo.pos);
+			BlockPos posToAdd = transformedOffsetPos(sbi.pos, mirror, rotation);
 			if (posToAdd != getListenerPos()) {
-				positions.add(posToAdd);
+				positions.put(posToAdd, sbi.state.mirror(mirror).rotate(rotation));
 			}
 		});
 		return positions;
 	}
 
-	public BlockPos structurePosToOriginOffset(BlockPos structPos) {
-
-		BlockPos corePos = getListenerPos();
-		BlockPos corner = corePos.subtract(template.getCenterPos());
-		return corner.subtract(structPos.multiply(-1)); // this just adds them. mojang please make an add function
-	}
+//	public BlockPos structurePosToOriginOffset(BlockPos structPos) {
+//
+//		BlockPos corePos = getListenerPos();
+//		BlockPos corner = corePos.subtract(template.getCenterPos());
+//		return corner.subtract(structPos.multiply(-1)); // this just adds them. mojang please make an add function
+//	}
 
 	private BlockPos withTransformations(BlockPos corePos, BlockPos relative, Mirror mirror, Rotation rot) {
 		StructurePlaceSettings settings =
@@ -119,20 +149,6 @@ public class MultiblockCore extends ChangeListener {
 	public BlockPos transformedOffsetPos(BlockPos cornerOffset, Mirror mirror, Rotation rot) {
 		BlockPos corePos = getListenerPos();
 		return withTransformations(corePos, cornerOffset, mirror, rot);
-	}
-
-	@Override
-	public void onBlockChange(BlockPos pos, LevelChunk chunk, BlockState state, BlockState newstate) {
-
-		StructureTemplate.Palette palette = getPalette();
-
-		for (StructureTemplate.StructureBlockInfo sbi : palette.blocks()) {
-			BlockPos currentPos = transformedOffsetPos(sbi.pos, Mirror.FRONT_BACK, Rotation.COUNTERCLOCKWISE_90);
-			BlockState currentBlock = sbi.state.mirror(Mirror.FRONT_BACK).rotate(Rotation.COUNTERCLOCKWISE_90);
-			if (sbi.state.getBlock() != template.getMasterBlock()) {
-				chunk.getLevel().setBlockAndUpdate(currentPos, currentBlock);
-			}
-		}
 	}
 
 	public CompoundTag getSaveData() {
@@ -162,7 +178,7 @@ public class MultiblockCore extends ChangeListener {
 		Block block = ForgeRegistries.BLOCKS.getCodec().parse(NbtOps.INSTANCE, tag.get("coreBlock"))
 				.getOrThrow(false, (e) -> {});
 
-		return new MultiblockCore(
+		return MultiblockCore.createOnServer(
 				BlockPos.of(tag.getLong("corePos")),
 				dimension,
 				block
@@ -176,14 +192,6 @@ public class MultiblockCore extends ChangeListener {
 			}
 		}
 		return false;
-	}
-
-	public void onPlaced() {
-		LogUtils.getLogger().info("onBlockChange(); PLACED");
-	}
-
-	public void onBroken() {
-		LogUtils.getLogger().info("onBlockChange(); BROKEN");
 	}
 
 	@Override
