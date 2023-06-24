@@ -32,8 +32,11 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
@@ -45,6 +48,7 @@ import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -103,15 +107,15 @@ public class MultiblockCoreHologramRenderer {
 				}
 			}
 
-			float ticksDuration = 40f;
+			float ticksDuration = 80f;
 			float renderTickCycle = (event.getRenderTick() % ticksDuration);
 //			float renderTickCycle = (float) Math.pow( ((1/7.36806)*(renderTickCycleX-ticksDuration)), 3) + ticksDuration;
 			// sin period must be 40
 			float opacityMin = 0.15f;
-			float opacityMax = 0.9f;
+			float opacityMax = 1f;
 			float opacity = (float) Math.pow(Math.sin( (Math.PI/ticksDuration)*renderTickCycle ), 2)*(opacityMax-opacityMin) + opacityMin;
 
-			RenderSystem.setShaderColor(opacity,opacity,opacity, opacity);
+			RenderSystem.setShaderColor(1f,1f,1f, opacity);
 
 			tesselator.end();
 
@@ -123,36 +127,10 @@ public class MultiblockCoreHologramRenderer {
 
 	@SubscribeEvent
 	public static void renderStage(RenderLevelStageEvent event) { // running on the client
-//		for (Consumer<RenderLevelStageEvent> function : renderFunctions.values()) {
-//			function.accept(event);
-//		}
 
-		final Mirror TEST_MIRROR = Mirror.NONE;
-		final Rotation TEST_ROTATION = Rotation.CLOCKWISE_90;
-		Minecraft minecraft = Minecraft.getInstance();
-
-		BlockPos checkPos =
-				new BlockPos(minecraft.player.getEyePosition().subtract(0,2,0));
-//		Block lookBlock = minecraft.level.getBlockState(checkPos).getBlock();
-
-		if (blocksToRender.isEmpty()) {
-			// this packet will ask the server if it can fill blocksToRender with the multiblock block info
-			// of the core at the position the client gives it. If the client is not currently rendering something else
-			// here it will add the blocks the server sends to render
-			MultiblockCoreHologramPacket.Serverbound serverPacket =
-					new MultiblockCoreHologramPacket.Serverbound(checkPos, TEST_MIRROR.ordinal(), TEST_ROTATION.ordinal());
-
-			PacketHandler.INSTANCE.sendToServer(
-					serverPacket
-			);
-		} else {
+		if (!blocksToRender.isEmpty()) {
 			MultiblockCoreHologramRenderer.renderCurrentBlockHolos(event);
 		}
-
-//		if (lookBlock.equals(ModBlocks.MULTIBLOCK_CORE.get())) {
-//			BlockHologramRenderer.renderCurrentBlockHolos(event);
-//		}
-
 
 	}
 
@@ -166,33 +144,62 @@ public class MultiblockCoreHologramRenderer {
 
 			Minecraft minecraftClient = Minecraft.getInstance();
 
-			Component comp = Component.literal(ChatFormatting.BOLD + "Viewing template of: " + ChatFormatting.DARK_AQUA + structureName);
+			float textX = minecraftClient.getWindow().getGuiScaledWidth()*0.05f;
+			float textY = minecraftClient.getWindow().getGuiScaledHeight()*0.8f;
 
-			float j = minecraftClient.getWindow().getGuiScaledWidth()*0.05f;
-			float k = minecraftClient.getWindow().getGuiScaledHeight()*0.8f;
+			for (BlockPos corePos : blocksToRender.keySet()) {
 
-//			float j = minecraftClient.getWindow().getGuiScaledWidth()/2f;
-//			float k = minecraftClient.getWindow().getGuiScaledHeight()/2f;
+				Block coreBlock = minecraftClient.level.getBlockState(corePos).getBlock();
+				ResourceLocation resLoc = ForgeRegistries.BLOCKS.getKey(coreBlock);
+				String namespace = resLoc.getNamespace();
+				String blockName = resLoc.getPath();
 
-			RenderSystem.enableBlend();
-			RenderSystem.defaultBlendFunc();
+				String langName = Component.translatable("multiblock."+namespace+"."+blockName).getString();
+				Component comp = Component.literal(ChatFormatting.BOLD + "Viewing template of: " + ChatFormatting.DARK_AQUA + langName);
 
-			poseStack.pushPose();
-			poseStack.scale(0.75f,0.75f,0.75f);
-			minecraftClient.font.drawShadow(poseStack, comp, j, k*(1/0.75f)*0.9f, 0xFFFFFFFF);
-			poseStack.popPose();
+				RenderSystem.enableBlend();
+				RenderSystem.defaultBlendFunc();
 
-			RenderSystem.disableBlend();
+				poseStack.pushPose();
+				poseStack.scale(0.75f,0.75f,0.75f);
+				minecraftClient.font.drawShadow(poseStack, comp, textX, textY*(1/0.75f)*0.9f, 0xFFFFFFFF);
+				poseStack.popPose();
+
+				RenderSystem.disableBlend();
+				textY=textY-minecraftClient.getWindow().getGuiScaledHeight()*0.04f;
+			}
 		}
 	}
 
 	@SubscribeEvent
-	public static void interactTemp(PlayerInteractEvent event) {
+	public static void interactTemp(PlayerInteractEvent.LeftClickBlock event) {
+
 		if (event.getEntity() != null) {
-			if (event.getItemStack().getItem() == Items.DIAMOND_SWORD) {
-				blocksToRender.clear();
+
+			Player player = event.getEntity();
+
+			if (event.getItemStack().getItem() == Items.NETHERITE_SWORD) {
+				blocksToRender.remove(event.getPos());
+			} if (event.getItemStack().getItem() == Items.DIAMOND_SWORD) {
+
+				final Mirror TEST_MIRROR = Mirror.NONE;
+				final Rotation TEST_ROTATION = Rotation.CLOCKWISE_90;
+
+				BlockPos checkPos =
+						new BlockPos(event.getPos());
+				// this packet will ask the server if it can fill blocksToRender with the multiblock block info
+				// of the core at the position the client gives it. If the client is not currently rendering something else
+				// here it will add the blocks the server sends to render
+				MultiblockCoreHologramPacket.Serverbound serverPacket =
+						new MultiblockCoreHologramPacket.Serverbound(checkPos, TEST_MIRROR.ordinal(), TEST_ROTATION.ordinal());
+
+				PacketHandler.INSTANCE.sendToServer(
+						serverPacket
+				);
 			}
+
 		}
+
 	}
 
 	public static void setStructureName(String name) {
